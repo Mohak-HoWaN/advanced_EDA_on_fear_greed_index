@@ -1,0 +1,5 @@
+Trade History & Market Sentiment Dashboard link :
+https://tradehistory.streamlit.app
+
+Fear & Greed Index Dashboard :
+https://fearandgreedindex.streamlit.app

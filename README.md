@@ -9,6 +9,7 @@ This project provides two interactive Streamlit dashboards designed to analyze m
 ### 1. Trade History & Market Sentiment Dashboard
 - **File**: `streamlit_hist.py`
 - **Purpose**: Analyze trade history and its relationship to market sentiment.
+- **Deployed Link**: [Trade History Dashboard](https://tradehistory.streamlit.app)
 - **Key Features**:
   - Comprehensive overview of trade data (e.g., total trades, unique accounts, unique coins).
   - Visualizations for:
@@ -25,6 +26,7 @@ This project provides two interactive Streamlit dashboards designed to analyze m
 ### 2. Fear & Greed Index Dashboard
 - **File**: `streamlit_f_g.py`
 - **Purpose**: Explore the Fear & Greed Index to understand market sentiment trends.
+- **Deployed Link**: [Fear & Greed Index Dashboard](https://fearandgreedindex.streamlit.app)
 - **Key Features**:
   - Sentiment counts and time-series analysis.
   - Rolling average and volatility of sentiment.
