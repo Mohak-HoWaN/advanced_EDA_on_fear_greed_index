@@ -1,3 +1,5 @@
+
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -42,43 +44,53 @@ longest_greed = streaks_df[streaks_df['type'] == 'Greed']['length'].max()
 extreme_periods = streaks_df[streaks_df['length'] >= 5]
 
 # Streamlit dashboard layout
-st.title('Advanced EDA: Fear & Greed Index Analysis')
-
+st.title('Fear & Greed Index: Step-by-Step Analysis')
+st.markdown('Welcome! This dashboard helps you understand how market sentiment (Fear & Greed) changes over time and what it might mean for trading. Each section has a plot, a simple description, and a key insight.')
 selected = st.sidebar.multiselect('Choose Sentiments', ['Fear', 'Neutral', 'Greed'], default=['Fear', 'Neutral', 'Greed'])
 filtered_df = df[df['sentiment'].isin(selected)]
 
-# Plot 1: Sentiment counts
+
+# 1. Sentiment counts
+st.header('1. How Often is the Market in Fear, Neutral, or Greed?')
+st.markdown('This bar chart shows how many days the market was classified as Fear, Neutral, or Greed.')
 counts = filtered_df['sentiment'].value_counts().reindex(['Fear', 'Neutral', 'Greed']).fillna(0)
 fig1, ax1 = plt.subplots()
 sns.barplot(x=counts.index, y=counts.values, palette=['red', 'gray', 'green'], ax=ax1)
 ax1.set_title('Sentiment Day Counts')
 ax1.set_ylabel('Count')
+st.pyplot(fig1)
+st.info(f"Most common sentiment: {counts.idxmax()} ({int(counts.max())} days). This can help you identify the prevailing mood in the market and adjust your strategy accordingly.")
 
-# Plot 2: Sentiment time series
+# 2. Sentiment time series
+st.header('2. How Does Sentiment Change Over Time?')
+st.markdown('This line plot shows how market sentiment moves between Fear, Neutral, and Greed over time.')
 fig2, ax2 = plt.subplots(figsize=(10, 3))
 sns.lineplot(x='date', y='sentiment_num', data=filtered_df, ax=ax2)
 ax2.set_title('Sentiment Time Series (Greed=1, Neutral=0.5, Fear=0)')
 ax2.set_ylabel('Sentiment Level')
+st.pyplot(fig2)
+st.info('Sentiment often stays in one state for several days before switching. Watch for sudden jumps! If you notice a rapid change, it may signal a shift in market regime or an opportunity for contrarian trades.')
 
-# Plot 3: Rolling Greed Average
+# 3. Rolling Greed Average
+st.header('3. Trend: 30-Day Rolling Average of Greed')
+st.markdown('This plot smooths out daily changes to show the overall trend in market sentiment.')
 fig3, ax3 = plt.subplots(figsize=(10, 3))
 ax3.plot(df['date'], df['rolling_greed'], color='blue')
 ax3.set_title('30-Day Rolling Average of Greed Sentiment')
 ax3.set_ylabel('Rolling Average')
-
-
-st.pyplot(fig1)
-st.pyplot(fig2)
 st.pyplot(fig3)
+st.info('When the rolling average is high, the market is mostly greedy. When low, mostly fearful. Sustained trends in the rolling average can help you spot momentum or mean-reversion opportunities.')
 
-# --- Advanced Analysis: Volatility, Transitions, Insights ---
-# Sentiment Volatility (rolling std)
+# 4. Sentiment Volatility (rolling std)
+st.header('4. Volatility: How Much Does Sentiment Change?')
+st.markdown('This plot shows how much sentiment is changing (volatility). High volatility means the market is switching between fear and greed more often.')
 df['sentiment_volatility'] = df['sentiment_num'].rolling(window=30).std()
 fig4, ax4 = plt.subplots(figsize=(10, 3))
 ax4.plot(df['date'], df['sentiment_volatility'], color='purple')
 ax4.set_title('30-Day Rolling Volatility of Sentiment')
 ax4.set_ylabel('Volatility (Std Dev)')
 st.pyplot(fig4)
+st.info('Spikes in volatility can signal big changes in market mood. These may be good times to watch for reversals or new trends.')
 
 # Sentiment Transition Matrix
 import numpy as np
@@ -88,23 +100,36 @@ for prev, curr in zip(df['sentiment'][:-1], df['sentiment'][1:]):
     if prev in sentiments and curr in sentiments:
         transition_counts.loc[prev, curr] += 1
 transition_probs = transition_counts.div(transition_counts.sum(axis=1), axis=0)
-st.subheader('Sentiment Transition Matrix (Probability)')
+
+# 5. Sentiment Transition Matrix
+st.header('5. How Does Sentiment Switch from One State to Another?')
+st.markdown('This table shows the probability that the market will stay in the same sentiment or switch to another the next day.')
 st.dataframe(transition_probs.style.format('{:.2f}'))
+st.info('The market usually stays in the same state, but sometimes switches. For example, after Fear, it often stays in Fear, but can move to Neutral or Greed. Understanding these probabilities can help you anticipate likely sentiment shifts and plan your trades.')
 
-# Insights Section
-st.subheader('Insights & Patterns for Trading Strategies')
-st.markdown('''
-- **Volatility spikes** in sentiment may signal upcoming regime changes—watch for high volatility periods.
-- **Transition probabilities** show that after a period of Fear, the market is most likely to remain in Fear, but transitions to Neutral or Greed do occur—potential for mean reversion strategies.
-- **Long streaks** of Greed or Fear are rare; after such streaks, a reversal is more likely.
-- **Rolling averages** can help identify persistent sentiment trends—useful for momentum or contrarian trading signals.
-''')
-st.markdown('''---\n**Tip:** Combine these sentiment analytics with price or volume data for even deeper trading insights.\n''')
+# 6. Longest Streaks and Extreme Sentiment Periods
+st.header('6. Longest Streaks and Extreme Sentiment Periods')
+st.markdown('Here we show the longest periods where the market stayed in Fear or Greed, and all streaks of 5 days or more.')
+st.write(f'**Longest Fear Streak:** {longest_fear} days')
+st.write(f'**Longest Greed Streak:** {longest_greed} days')
 
-# Show streak summaries
-st.subheader('Longest Sentiment Streaks')
-st.write(f'Longest Fear Streak: {longest_fear} days')
-st.write(f'Longest Greed Streak: {longest_greed} days')
-
-st.subheader('Extreme Sentiment Periods (Streaks >= 5 days)')
 st.dataframe(extreme_periods.sort_values(by='length', ascending=False))
+st.info('Long streaks of Fear or Greed are rare. After such streaks, the market often reverses. Monitoring for the end of a long streak can help you catch turning points in the market.')
+
+# --- Summary Section ---
+st.header('Summary & Key Takeaways')
+st.markdown('''
+**Key Insights:**
+- The market spends most of its time in one sentiment regime, but transitions do occur and can be anticipated.
+- High volatility in sentiment often precedes major market moves—watch for these periods.
+- Long streaks of Fear or Greed are uncommon and often followed by reversals.
+- Use rolling averages and transition probabilities to inform momentum or contrarian strategies.
+
+**Actionable Tips:**
+- Adjust your trading style based on the prevailing sentiment and its recent history.
+- Be alert for regime changes after long streaks or volatility spikes.
+- Combine sentiment analytics with price/volume data for deeper insights.
+''')
+
+st.markdown('---')
+st.markdown('**Tip:** Combine these sentiment analytics with price or volume data for even deeper trading insights.')
