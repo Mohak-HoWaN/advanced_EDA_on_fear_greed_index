@@ -166,7 +166,7 @@ st.markdown('<a id="summary--key-takeaways"></a><h2>Summary & Key Takeaways</h2>
 st.markdown('''
 **Key Insights:**
 - The market spends most of its time in one sentiment regime, but transitions do occur and can be anticipated.
-- High volatility in sentiment often precedes major market moves—watch for these periods.
+- High volatility in sentiment often precedes major market moves - watch for these periods.
 - Long streaks of Fear or Greed are uncommon and often followed by reversals.
 - Use rolling averages and transition probabilities to inform momentum or contrarian strategies.
 
