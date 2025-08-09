@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+from typing import Tuple, List
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -10,8 +11,20 @@ st.set_page_config(
     layout="wide"
 )
 
+# Caching data loading for performance optimization
+@st.cache_data
+def load_data(file_path: str) -> pd.DataFrame:
+    try:
+        return pd.read_csv(file_path)
+    except FileNotFoundError:
+        st.error(f"File not found: {file_path}")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error loading file {file_path}: {e}")
+        return pd.DataFrame()
+
 # Load and preprocess data
-df = pd.read_csv('fear_greed_index.csv')
+df = load_data('fear_greed_index.csv')
 df.columns = df.columns.str.lower()
 df['date'] = pd.to_datetime(df['date'])
 
@@ -95,34 +108,42 @@ st.sidebar.markdown("""
 </ul>
 """, unsafe_allow_html=True)
 
+# Function for creating bar plots with tooltips
+def create_barplot(data: pd.Series, title: str, palette: List[str]) -> Tuple[plt.Figure, plt.Axes]:
+    fig, ax = plt.subplots()
+    sns.barplot(x=data.index, y=data.values, palette=palette, ax=ax)
+    ax.set_title(title)
+    return fig, ax
+
 # Add anchors before all section titles
 st.markdown('<a id="sentiment-counts"></a><h2>1. How Often is the Market in Fear, Neutral, or Greed?</h2>', unsafe_allow_html=True)
 st.markdown('This bar chart shows how many days the market was classified as Fear, Neutral, or Greed.')
-counts = filtered_df['sentiment'].value_counts().reindex(['Fear', 'Neutral', 'Greed']).fillna(0)
-fig1, ax1 = plt.subplots()
-sns.barplot(x=counts.index, y=counts.values, palette=['red', 'gray', 'green'], ax=ax1)
-ax1.set_title('Sentiment Day Counts')
-ax1.set_ylabel('Count')
+counts = df['sentiment'].value_counts().reindex(['Fear', 'Neutral', 'Greed']).fillna(0)
+fig1, ax1 = create_barplot(counts, 'Sentiment Day Counts', palette=['#d73027', '#fdae61', '#1a9850'])
 st.pyplot(fig1)
 st.info(f"Most common sentiment: {counts.idxmax()} ({int(counts.max())} days). This can help you identify the prevailing mood in the market and adjust your strategy accordingly.")
 
 # 2. Sentiment time series
 st.markdown('<a id="sentiment-time-series"></a><h2>2. How Does Sentiment Change Over Time?</h2>', unsafe_allow_html=True)
 st.markdown('This line plot shows how market sentiment moves between Fear, Neutral, and Greed over time.')
-fig2, ax2 = plt.subplots(figsize=(10, 3))
+fig2, ax2 = plt.subplots(figsize=(6, 3))  # Reduced size
 sns.lineplot(x='date', y='sentiment_num', data=filtered_df, ax=ax2)
 ax2.set_title('Sentiment Time Series (Greed=1, Neutral=0.5, Fear=0)')
-ax2.set_ylabel('Sentiment Level')
+ax2.set_xlabel("Date", labelpad=10)  # Add padding to x-axis label
+ax2.set_ylabel("Sentiment Level", labelpad=10)  # Add padding to y-axis label
+ax2.tick_params(axis='x', rotation=45)  # Rotate x-axis labels for better readability
 st.pyplot(fig2)
 st.info('Sentiment often stays in one state for several days before switching. Watch for sudden jumps! If you notice a rapid change, it may signal a shift in market regime or an opportunity for contrarian trades.')
 
 # 3. Rolling Greed Average
 st.markdown('<a id="rolling-greed-average"></a><h2>3. Trend: 30-Day Rolling Average of Greed</h2>', unsafe_allow_html=True)
 st.markdown('This plot smooths out daily changes to show the overall trend in market sentiment.')
-fig3, ax3 = plt.subplots(figsize=(10, 3))
+fig3, ax3 = plt.subplots(figsize=(6, 3))  # Reduced size
 ax3.plot(df['date'], df['rolling_greed'], color='blue')
 ax3.set_title('30-Day Rolling Average of Greed Sentiment')
-ax3.set_ylabel('Rolling Average')
+ax3.set_xlabel("Date", labelpad=10)  # Add padding to x-axis label
+ax3.set_ylabel("Rolling Average", labelpad=10)  # Add padding to y-axis label
+ax3.tick_params(axis='x', rotation=45)  # Rotate x-axis labels for better readability
 st.pyplot(fig3)
 st.info('When the rolling average is high, the market is mostly greedy. When low, mostly fearful. Sustained trends in the rolling average can help you spot momentum or mean-reversion opportunities.')
 
@@ -133,7 +154,9 @@ df['sentiment_volatility'] = df['sentiment_num'].rolling(window=30).std()
 fig4, ax4 = plt.subplots(figsize=(10, 3))
 ax4.plot(df['date'], df['sentiment_volatility'], color='purple')
 ax4.set_title('30-Day Rolling Volatility of Sentiment')
-ax4.set_ylabel('Volatility (Std Dev)')
+ax4.set_xlabel("Date", labelpad=10)  # Add padding to x-axis label
+ax4.set_ylabel("Volatility (Std Dev)", labelpad=10)  # Add padding to y-axis label
+ax4.tick_params(axis='x', rotation=45)  # Rotate x-axis labels for better readability
 st.pyplot(fig4)
 st.info('Spikes in volatility can signal big changes in market mood. These may be good times to watch for reversals or new trends.')
 

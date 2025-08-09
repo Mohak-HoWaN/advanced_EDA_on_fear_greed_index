@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+from typing import Tuple, List
 
 # Set page configuration
 st.set_page_config(
@@ -35,8 +36,6 @@ a[id] {
 </style>
 """, unsafe_allow_html=True)
 
-# Correct sidebar points to avoid duplication and ensure proper structure
-
 # Sidebar for navigation
 st.sidebar.title("Navigation")
 st.sidebar.markdown("Use the sections below to explore the dashboard:")
@@ -57,8 +56,20 @@ st.sidebar.markdown("""
 </ul>
 """, unsafe_allow_html=True)
 
+# Caching data loading for performance optimization
+@st.cache_data
+def load_data(file_path: str) -> pd.DataFrame:
+    try:
+        return pd.read_csv(file_path)
+    except FileNotFoundError:
+        st.error(f"File not found: {file_path}")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error loading file {file_path}: {e}")
+        return pd.DataFrame()
+
 # Load trade data
-df = pd.read_csv('historical_data.csv')
+df = load_data('historical_data.csv')
 df.columns = df.columns.str.strip()
 df['Timestamp IST'] = pd.to_datetime(df['Timestamp IST'], errors='coerce')
 df['Timestamp'] = pd.to_datetime(df['Timestamp'], errors='coerce')
@@ -68,7 +79,7 @@ for col in num_cols:
 df['Side'] = df['Side'].str.upper()
 
 # Load sentiment data and merge
-sent = pd.read_csv('fear_greed_index.csv')
+sent = load_data('fear_greed_index.csv')
 sent.columns = sent.columns.str.lower()
 sent['date'] = pd.to_datetime(sent['date'])
 sent['classification'] = sent['classification'].str.lower()
@@ -79,6 +90,13 @@ sent['sentiment'] = sent['classification'].map(sentiment_map)
 df['date'] = df['Timestamp IST'].dt.date
 sent['date'] = sent['date'].dt.date
 df = df.merge(sent[['date', 'sentiment']], on='date', how='left')
+
+# Function for creating plots with tooltips
+def create_countplot(data: pd.DataFrame, x: str, title: str, palette: List[str]) -> Tuple[plt.Figure, plt.Axes]:
+    fig, ax = plt.subplots()
+    sns.countplot(data=data, x=x, ax=ax, palette=palette)
+    ax.set_title(title)
+    return fig, ax
 
 # Basic overview in Streamlit dashboard
 
@@ -98,9 +116,10 @@ st.write(df.head())
 # 1. Trade Side Distribution
 st.markdown('<a id="trade-side-distribution"></a><h2>📈 1. Trade Side Distribution</h2>', unsafe_allow_html=True)
 st.markdown("This chart shows the number of buy and sell trades.")
-fig1, ax1 = plt.subplots()
-sns.countplot(data=df, x='Side', ax=ax1, palette=['green', 'red'])
-ax1.set_title("Buy vs Sell Trade Counts")
+fig1, ax1 = create_countplot(df, 'Side', "Buy vs Sell Trade Counts", palette=['#377eb8', '#e41a1c'])
+fig1.set_size_inches(5, 3)  # Reduced size
+ax1.set_xlabel("Trade Side", labelpad=10)  # Add padding to x-axis label
+ax1.set_ylabel("Count", labelpad=10)  # Add padding to y-axis label
 st.pyplot(fig1)
 side = df['Side'].mode()[0]
 st.info(f"Most trades are {side}s. This may reflect a market bias or trader preference. If you notice a persistent bias, consider if it aligns with prevailing sentiment or if it exposes you to one-sided risk.")
@@ -110,11 +129,12 @@ st.info(f"Most trades are {side}s. This may reflect a market bias or trader pref
 st.markdown('<a id="most-traded-coins"></a><h2>💰 2. Most Traded Coins</h2>', unsafe_allow_html=True)
 st.markdown("Top 10 coins by number of trades.")
 top_coins = df['Coin'].value_counts().head(10)
-fig2, ax2 = plt.subplots(figsize=(10,4))
+fig2, ax2 = plt.subplots(figsize=(6, 3))  # Reduced size
 sns.barplot(x=top_coins.index, y=top_coins.values, ax=ax2, palette='viridis')
 ax2.set_title("Top 10 Traded Coins by Number of Trades")
-ax2.set_xlabel("Coin")
-ax2.set_ylabel("Number of Trades")
+ax2.set_xlabel("Coin", labelpad=10)  # Add padding to x-axis label
+ax2.set_ylabel("Number of Trades", labelpad=10)  # Add padding to y-axis label
+ax2.tick_params(axis='x', rotation=45)  # Rotate x-axis labels for better readability
 st.pyplot(fig2)
 st.info("The most traded coins may reflect current market trends or trader preferences. Focus your analysis on these coins for the most actionable insights.")
 
@@ -122,10 +142,13 @@ st.info("The most traded coins may reflect current market trends or trader prefe
 # 3. Trade Size (USD) Distribution by Coin
 st.markdown('<a id="trade-size-distribution"></a><h2>📦 3. Trade Size (USD) Distribution by Coin</h2>', unsafe_allow_html=True)
 st.markdown("Boxplot of trade sizes (USD) for the top traded coins.")
-fig3, ax3 = plt.subplots(figsize=(12,6))
+fig3, ax3 = plt.subplots(figsize=(6, 3))  # Reduced size
 sns.boxplot(data=df[df['Coin'].isin(top_coins.index)], x='Coin', y='Size USD', ax=ax3)
 ax3.set_yscale('log')
 ax3.set_title("Log Scale Distribution of Trade Size (USD) by Top Coins")
+ax3.set_xlabel("Coin", labelpad=10)  # Add padding to x-axis label
+ax3.set_ylabel("Trade Size (USD)", labelpad=10)  # Add padding to y-axis label
+ax3.tick_params(axis='x', rotation=45)  # Rotate x-axis labels for better readability
 st.pyplot(fig3)
 st.info("Wide variation in trade size may indicate different trader types (retail vs. institutional) or changing conviction. Outliers can signal large players or unusual activity.")
 
@@ -133,9 +156,11 @@ st.info("Wide variation in trade size may indicate different trader types (retai
 # 4. Closed PnL Overview
 st.markdown('<a id="closed-pnl-overview"></a><h2>📉 4. Closed PnL Overview</h2>', unsafe_allow_html=True)
 st.markdown("Distribution of profit and loss (PnL) for all trades.")
-fig4, ax4 = plt.subplots()
+fig4, ax4 = plt.subplots(figsize=(6, 3))  # Reduced size
 sns.histplot(df['Closed PnL'].dropna(), bins=50, kde=True, ax=ax4)
 ax4.set_title("Distribution of Closed PnL")
+ax4.set_xlabel("Closed PnL", labelpad=10)  # Add padding to x-axis label
+ax4.set_ylabel("Frequency", labelpad=10)  # Add padding to y-axis label
 st.pyplot(fig4)
 mean_pnl = df['Closed PnL'].mean()
 median_pnl = df['Closed PnL'].median()
@@ -146,11 +171,12 @@ st.info(f"Average PnL: {mean_pnl:.2f}, Median: {median_pnl:.2f}. If your average
 st.markdown('<a id="trade-frequency-over-time"></a><h2>📅 5. Trade Frequency Over Time</h2>', unsafe_allow_html=True)
 st.markdown("Number of trades per day.")
 trade_counts = df.groupby(df['Timestamp IST'].dt.date).size()
-fig5, ax5 = plt.subplots(figsize=(10,4))
+fig5, ax5 = plt.subplots(figsize=(6, 3))  # Reduced size
 trade_counts.plot(ax=ax5)
 ax5.set_title("Number of Trades Per Day")
-ax5.set_xlabel("Date")
-ax5.set_ylabel("Number of Trades")
+ax5.set_xlabel("Date", labelpad=10)  # Add padding to x-axis label
+ax5.set_ylabel("Number of Trades", labelpad=10)  # Add padding to y-axis label
+ax5.tick_params(axis='x', rotation=45)  # Rotate x-axis labels for better readability
 st.pyplot(fig5)
 st.info("Spikes or drops in daily trade frequency may be linked to news, sentiment shifts, or market events. Use these patterns to time entries or exits.")
 
@@ -161,11 +187,12 @@ st.markdown("Shows how the average execution price changes over time for the mos
 top_3_coins = top_coins.head(3).index
 df_top3 = df[df['Coin'].isin(top_3_coins)]
 avg_price = df_top3.groupby(['Timestamp IST', 'Coin'])['Execution Price'].mean().unstack()
-fig6, ax6 = plt.subplots(figsize=(12,6))
+fig6, ax6 = plt.subplots(figsize=(6, 3))  # Reduced size
 avg_price.plot(ax=ax6)
 ax6.set_title("Average Execution Price Over Time for Top 3 Coins")
-ax6.set_xlabel("Timestamp")
-ax6.set_ylabel("Average Execution Price")
+ax6.set_xlabel("Timestamp", labelpad=10)  # Add padding to x-axis label
+ax6.set_ylabel("Average Execution Price", labelpad=10)  # Add padding to y-axis label
+ax6.tick_params(axis='x', rotation=45)  # Rotate x-axis labels for better readability
 st.pyplot(fig6)
 st.info("Tracking execution price trends helps you spot momentum, mean reversion, or regime changes in the most active coins.")
 
@@ -174,7 +201,7 @@ st.info("Tracking execution price trends helps you spot momentum, mean reversion
 st.markdown('<a id="fees-paid-by-top-coins"></a><h2>💸 7. Fees Paid by Top Coins</h2>', unsafe_allow_html=True)
 st.markdown("Total fees paid per coin for the top traded coins.")
 fee_sum = df.groupby('Coin')['Fee'].sum().loc[top_coins.index]
-fig7, ax7 = plt.subplots(figsize=(10,4))
+fig7, ax7 = plt.subplots(figsize=(8, 4))
 sns.barplot(x=fee_sum.index, y=fee_sum.values, ax=ax7, palette='magma')
 ax7.set_title("Total Fees Paid per Coin")
 ax7.set_ylabel("Total Fees")
