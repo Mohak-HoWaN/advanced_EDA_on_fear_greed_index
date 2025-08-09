@@ -3,6 +3,59 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 
+# Set page configuration
+st.set_page_config(
+    page_title="Trade History & Market Sentiment Dashboard",
+    page_icon="📊",
+    layout="wide"
+)
+
+# Add custom CSS for smooth scrolling and styled navbar
+st.markdown("""
+<style>
+html {
+    scroll-behavior: smooth;
+}
+
+/* Target links inside the sidebar */
+section[data-testid="stSidebar"] a {
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+section[data-testid="stSidebar"] a:hover {
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+/* Make anchors scroll to the right position */
+a[id] {
+    scroll-margin-top: 90px; /* adjust if your top bar is bigger */
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Correct sidebar points to avoid duplication and ensure proper structure
+
+# Sidebar for navigation
+st.sidebar.title("Navigation")
+st.sidebar.markdown("Use the sections below to explore the dashboard:")
+st.sidebar.markdown("""
+<ul>
+    <li><a href="#data-overview">Data Overview</a></li>
+    <li><a href="#trade-side-distribution">Trade Side Distribution</a></li>
+    <li><a href="#most-traded-coins">Most Traded Coins</a></li>
+    <li><a href="#trade-size-distribution">Trade Size Distribution</a></li>
+    <li><a href="#closed-pnl-overview">Closed PnL Overview</a></li>
+    <li><a href="#trade-frequency-over-time">Trade Frequency Over Time</a></li>
+    <li><a href="#average-execution-price-over-time-top-3-coins">Execution Price Trends</a></li>
+    <li><a href="#fees-paid-by-top-coins">Fees Analysis</a></li>
+    <li><a href="#correlation-matrix-of-numeric-features">Correlation Matrix</a></li>
+    <li><a href="#trader-performance-by-market-sentiment">Performance by Sentiment</a></li>
+    <li><a href="#streaks-of-winning-and-losing-trades">Streak Analysis</a></li>
+    <li><a href="#summary--key-takeaways">Summary</a></li>
+</ul>
+""", unsafe_allow_html=True)
 
 # Load trade data
 df = pd.read_csv('historical_data.csv')
@@ -29,10 +82,10 @@ df = df.merge(sent[['date', 'sentiment']], on='date', how='left')
 
 # Basic overview in Streamlit dashboard
 
-st.title("Advanced EDA Dashboard: Trade History & Market Sentiment")
+st.title("📊 Advanced EDA Dashboard: Trade History & Market Sentiment")
 st.markdown("This dashboard explores the relationship between trader performance and market sentiment, uncovering patterns and insights for smarter trading.")
 
-st.header("Data Overview")
+st.markdown('<a id="data-overview"></a><h2>📋 Data Overview</h2>', unsafe_allow_html=True)
 st.write(f"Total Trades: {len(df)}")
 st.write(f"Unique Accounts: {df['Account'].nunique()}")
 st.write(f"Unique Coins: {df['Coin'].nunique()}")
@@ -43,7 +96,7 @@ st.write(df.head())
 
 
 # 1. Trade Side Distribution
-st.header("1. Trade Side Distribution")
+st.markdown('<a id="trade-side-distribution"></a><h2>📈 1. Trade Side Distribution</h2>', unsafe_allow_html=True)
 st.markdown("This chart shows the number of buy and sell trades.")
 fig1, ax1 = plt.subplots()
 sns.countplot(data=df, x='Side', ax=ax1, palette=['green', 'red'])
@@ -54,7 +107,7 @@ st.info(f"Most trades are {side}s. This may reflect a market bias or trader pref
 
 
 # 2. Most Traded Coins
-st.header("2. Most Traded Coins")
+st.markdown('<a id="most-traded-coins"></a><h2>💰 2. Most Traded Coins</h2>', unsafe_allow_html=True)
 st.markdown("Top 10 coins by number of trades.")
 top_coins = df['Coin'].value_counts().head(10)
 fig2, ax2 = plt.subplots(figsize=(10,4))
@@ -67,7 +120,7 @@ st.info("The most traded coins may reflect current market trends or trader prefe
 
 
 # 3. Trade Size (USD) Distribution by Coin
-st.header("3. Trade Size (USD) Distribution by Coin")
+st.markdown('<a id="trade-size-distribution"></a><h2>📦 3. Trade Size (USD) Distribution by Coin</h2>', unsafe_allow_html=True)
 st.markdown("Boxplot of trade sizes (USD) for the top traded coins.")
 fig3, ax3 = plt.subplots(figsize=(12,6))
 sns.boxplot(data=df[df['Coin'].isin(top_coins.index)], x='Coin', y='Size USD', ax=ax3)
@@ -78,7 +131,7 @@ st.info("Wide variation in trade size may indicate different trader types (retai
 
 
 # 4. Closed PnL Overview
-st.header("4. Closed PnL Overview")
+st.markdown('<a id="closed-pnl-overview"></a><h2>📉 4. Closed PnL Overview</h2>', unsafe_allow_html=True)
 st.markdown("Distribution of profit and loss (PnL) for all trades.")
 fig4, ax4 = plt.subplots()
 sns.histplot(df['Closed PnL'].dropna(), bins=50, kde=True, ax=ax4)
@@ -90,7 +143,7 @@ st.info(f"Average PnL: {mean_pnl:.2f}, Median: {median_pnl:.2f}. If your average
 
 
 # 5. Trade Frequency Over Time
-st.header("5. Trade Frequency Over Time")
+st.markdown('<a id="trade-frequency-over-time"></a><h2>📅 5. Trade Frequency Over Time</h2>', unsafe_allow_html=True)
 st.markdown("Number of trades per day.")
 trade_counts = df.groupby(df['Timestamp IST'].dt.date).size()
 fig5, ax5 = plt.subplots(figsize=(10,4))
@@ -103,7 +156,7 @@ st.info("Spikes or drops in daily trade frequency may be linked to news, sentime
 
 
 # 6. Average Execution Price Over Time (Top 3 Coins)
-st.header("6. Average Execution Price Over Time (Top 3 Coins)")
+st.markdown('<a id="average-execution-price-over-time-top-3-coins"></a><h2>📊 6. Average Execution Price Over Time (Top 3 Coins)</h2>', unsafe_allow_html=True)
 st.markdown("Shows how the average execution price changes over time for the most traded coins.")
 top_3_coins = top_coins.head(3).index
 df_top3 = df[df['Coin'].isin(top_3_coins)]
@@ -118,7 +171,7 @@ st.info("Tracking execution price trends helps you spot momentum, mean reversion
 
 
 # 7. Fees Paid by Top Coins
-st.header("7. Fees Paid by Top Coins")
+st.markdown('<a id="fees-paid-by-top-coins"></a><h2>💸 7. Fees Paid by Top Coins</h2>', unsafe_allow_html=True)
 st.markdown("Total fees paid per coin for the top traded coins.")
 fee_sum = df.groupby('Coin')['Fee'].sum().loc[top_coins.index]
 fig7, ax7 = plt.subplots(figsize=(10,4))
@@ -131,7 +184,7 @@ st.info("High fees on certain coins may indicate high activity or less efficient
 
 
 # 8. Correlation Matrix of Numeric Features
-st.header("8. Correlation Matrix of Numeric Features")
+st.markdown('<a id="correlation-matrix-of-numeric-features"></a><h2>🔗 8. Correlation Matrix of Numeric Features</h2>', unsafe_allow_html=True)
 st.markdown("Correlation between trade size, price, PnL, and fees.")
 num_df = df[num_cols + ['Execution Price']]
 corr = num_df.corr()
@@ -142,7 +195,7 @@ st.pyplot(fig8)
 st.info("Strong correlations between features can help you build predictive models or spot risk factors. For example, if PnL and trade size are highly correlated, larger trades may be riskier or more profitable.")
 
 # --- Advanced EDA: Relating Performance to Sentiment ---
-st.header("9. Trader Performance by Market Sentiment")
+st.markdown('<a id="trader-performance-by-market-sentiment"></a><h2>📈 9. Trader Performance by Market Sentiment</h2>', unsafe_allow_html=True)
 st.markdown("How does trader performance (PnL, win rate, trade size) change with market sentiment?")
 sentiment_order = ['Fear', 'Neutral', 'Greed']
 sentiment_pnl = df.groupby('sentiment')['Closed PnL'].mean().reindex(sentiment_order)
@@ -188,7 +241,7 @@ max_vol = sentiment_pnl_vol.idxmax()
 st.info(f"PnL volatility is highest during {max_vol} periods. High volatility means larger swings in profit and loss, so you may want to reduce position size or use tighter stops during these times.")
 
 # Streaks of winning/losing trades
-st.header("10. Streaks of Winning and Losing Trades")
+st.markdown('<a id="streaks-of-winning-and-losing-trades"></a><h2>🔄 10. Streaks of Winning and Losing Trades</h2>', unsafe_allow_html=True)
 st.markdown("How long do traders stay on a winning or losing streak?")
 streaks = []
 current = None
@@ -214,7 +267,7 @@ st.info(f"Long winning streaks (max: {longest_win}) and losing streaks (max: {lo
 
 
 # --- Summary Section ---
-st.header('Summary & Key Takeaways')
+st.markdown('<a id="summary--key-takeaways"></a><h2>📌 Summary & Key Takeaways</h2>', unsafe_allow_html=True)
 st.markdown('''
 **Key Insights:**
 - Trader performance and behavior shift with market sentiment. Highest PnL and win rates often occur in specific sentiment regimes.
