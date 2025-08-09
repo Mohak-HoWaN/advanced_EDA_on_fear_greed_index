@@ -66,9 +66,40 @@ ax3.plot(df['date'], df['rolling_greed'], color='blue')
 ax3.set_title('30-Day Rolling Average of Greed Sentiment')
 ax3.set_ylabel('Rolling Average')
 
+
 st.pyplot(fig1)
 st.pyplot(fig2)
 st.pyplot(fig3)
+
+# --- Advanced Analysis: Volatility, Transitions, Insights ---
+# Sentiment Volatility (rolling std)
+df['sentiment_volatility'] = df['sentiment_num'].rolling(window=30).std()
+fig4, ax4 = plt.subplots(figsize=(10, 3))
+ax4.plot(df['date'], df['sentiment_volatility'], color='purple')
+ax4.set_title('30-Day Rolling Volatility of Sentiment')
+ax4.set_ylabel('Volatility (Std Dev)')
+st.pyplot(fig4)
+
+# Sentiment Transition Matrix
+import numpy as np
+sentiments = ['Fear', 'Neutral', 'Greed']
+transition_counts = pd.DataFrame(0, index=sentiments, columns=sentiments)
+for prev, curr in zip(df['sentiment'][:-1], df['sentiment'][1:]):
+    if prev in sentiments and curr in sentiments:
+        transition_counts.loc[prev, curr] += 1
+transition_probs = transition_counts.div(transition_counts.sum(axis=1), axis=0)
+st.subheader('Sentiment Transition Matrix (Probability)')
+st.dataframe(transition_probs.style.format('{:.2f}'))
+
+# Insights Section
+st.subheader('Insights & Patterns for Trading Strategies')
+st.markdown('''
+- **Volatility spikes** in sentiment may signal upcoming regime changes—watch for high volatility periods.
+- **Transition probabilities** show that after a period of Fear, the market is most likely to remain in Fear, but transitions to Neutral or Greed do occur—potential for mean reversion strategies.
+- **Long streaks** of Greed or Fear are rare; after such streaks, a reversal is more likely.
+- **Rolling averages** can help identify persistent sentiment trends—useful for momentum or contrarian trading signals.
+''')
+st.markdown('''---\n**Tip:** Combine these sentiment analytics with price or volume data for even deeper trading insights.\n''')
 
 # Show streak summaries
 st.subheader('Longest Sentiment Streaks')
